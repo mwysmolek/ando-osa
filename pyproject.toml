@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ando-osa"
+version = "0.1.0"
+description = "PyQt5 GUI for controlling Ando AQ63xx optical spectrum analyzers over GPIB/VISA"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "wysmolek", email = "wysmolek@gmail.com" },
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pyvisa>=1.11",
+    "PyQt5>=5.15",
+    "numpy>=1.20",
+    "matplotlib>=3.3",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.gui-scripts]
+ando-osa = "ando_osa.__main__:main"
+
+[tool.setuptools]
+packages = ["ando_osa"]

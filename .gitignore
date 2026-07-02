@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Editors / tooling
+.idea/
+.vscode/
+.claude/
+
+# Legacy pre-refactor scripts (kept locally for reference, not published)
+ando.py
+ando107.py
+
+# Measurement output, if saved inside the repo
+timelapse_*/
