@@ -52,6 +52,32 @@ class _AbortableWorker(QObject):
         raise TimeoutError(f"Sweep did not finish within {SWEEP_TIMEOUT_S:.0f} s.")
 
 
+class ConnectWorker(_AbortableWorker):
+    """Scans VISA resources for an Ando OSA without blocking the GUI.
+
+    The scan itself (pyvisa resource discovery) can take a long time,
+    especially with pyvisa-py probing serial ports and the network.
+    """
+
+    finished = pyqtSignal()
+    connected = pyqtSignal(object)  # AndoOSA instance or None
+
+    def __init__(self, resource_manager):
+        super().__init__()
+        self.resource_manager = resource_manager
+
+    @pyqtSlot()
+    def run(self):
+        osa = None
+        try:
+            from .instrument import AndoOSA
+            osa = AndoOSA.find(self.resource_manager)
+        except Exception:
+            log.exception("VISA scan failed")
+        self.connected.emit(osa)
+        self.finished.emit()
+
+
 class SweepWorker(_AbortableWorker):
     """Runs one sweep and emits the resulting trace."""
 

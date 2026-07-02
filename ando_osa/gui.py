@@ -7,7 +7,7 @@ from datetime import datetime
 
 import numpy as np
 import pyvisa
-from PyQt5.QtCore import Qt, QThread
+from PyQt5.QtCore import Qt, QThread, QTimer
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
     QComboBox, QLabel, QLineEdit, QFileDialog, QCheckBox, QMessageBox,
@@ -20,9 +20,9 @@ from matplotlib.figure import Figure
 
 from . import analysis
 from .instrument import (
-    AndoOSA, RESOLUTIONS_NM, SENSITIVITY_MODES, TRACES, validate_sweep_range,
+    RESOLUTIONS_NM, SENSITIVITY_MODES, TRACES, validate_sweep_range,
 )
-from .workers import SweepWorker, TimeLapseWorker
+from .workers import ConnectWorker, SweepWorker, TimeLapseWorker
 
 log = logging.getLogger(__name__)
 
@@ -202,10 +202,14 @@ class SpectrometerGUI(QMainWindow):
         self.sweep_worker = None
         self.tl_thread = None
         self.tl_worker = None
+        self.connect_thread = None
+        self.connect_worker = None
         self._tl_runs = []
 
         self.init_ui()
-        self.auto_connect_device()
+        # Defer the device scan so the window appears immediately; the
+        # scan itself runs in a worker thread (it can take a long time).
+        QTimer.singleShot(0, self.auto_connect_device)
 
     # ------------------------------------------------------------------ UI
     def init_ui(self):
@@ -389,7 +393,23 @@ class SpectrometerGUI(QMainWindow):
         if self.osa is not None:
             self.statusbar.showMessage(f"Already connected to {self.osa.idn}")
             return
-        osa = AndoOSA.find(self.rm)
+        if self.connect_thread is not None:
+            self.statusbar.showMessage("Device scan already in progress…")
+            return
+
+        self.connect_worker = ConnectWorker(self.rm)
+        self.connect_worker.connected.connect(
+            lambda osa: self.on_scan_result(osa, silent))
+        self.connect_worker.finished.connect(self.on_scan_finished)
+        self.connect_thread = QThread(self)
+        self.connect_worker.moveToThread(self.connect_thread)
+        self.connect_thread.started.connect(self.connect_worker.run)
+        self.connect_thread.start()
+
+        self._set_busy("connect")
+        self.statusbar.showMessage("Searching for Ando OSA…")
+
+    def on_scan_result(self, osa, silent):
         if osa is None:
             self.statusbar.showMessage("No Ando OSA found.")
             if not silent:
@@ -403,6 +423,10 @@ class SpectrometerGUI(QMainWindow):
             self.statusbar.showMessage(f"Connected, but initialization failed: {e}")
             return
         self.statusbar.showMessage(f"Connected to {osa.idn}")
+
+    def on_scan_finished(self):
+        self._cleanup_thread("connect")
+        self._set_busy(None)
 
     def disconnect_device(self):
         if self.osa is None:
@@ -479,6 +503,8 @@ class SpectrometerGUI(QMainWindow):
     def _cleanup_thread(self, which):
         if which == "sweep":
             thread, self.sweep_thread, self.sweep_worker = self.sweep_thread, None, None
+        elif which == "connect":
+            thread, self.connect_thread, self.connect_worker = self.connect_thread, None, None
         else:
             thread, self.tl_thread, self.tl_worker = self.tl_thread, None, None
         if thread:
@@ -737,7 +763,8 @@ class SpectrometerGUI(QMainWindow):
     # ------------------------------------------------------------------ exit
     def closeEvent(self, event):
         for worker, thread in ((self.sweep_worker, self.sweep_thread),
-                               (self.tl_worker, self.tl_thread)):
+                               (self.tl_worker, self.tl_thread),
+                               (self.connect_worker, self.connect_thread)):
             if worker:
                 worker.stop()
             if thread:
