@@ -124,7 +124,7 @@ def build_app(onefile: bool, console: bool) -> None:
         "--add-data", f"{ROOT / 'CHANGELOG.md'}{SEP}.",
         "--hidden-import", "PySide6.QtNetwork",
         "--hidden-import", "matplotlib.backends.backend_qtagg", "--hidden-import", "matplotlib.backends.backend_agg",
-        "--collect-submodules", "pyvisa_py", "--collect-submodules", "pyvisa",
+        "--hidden-import", "pyvisa_py", "--collect-submodules", "pyvisa_py",     # pyvisa loads the @py backend by name
         "--collect-submodules", "ando_osa", "--collect-submodules", "osa_qt",
         "--copy-metadata", "pyvisa", "--copy-metadata", "pyvisa-py", "--copy-metadata", "numpy",
         "--copy-metadata", "matplotlib",
