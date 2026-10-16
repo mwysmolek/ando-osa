@@ -1,0 +1,42 @@
+name: Clean up Actions artifacts
+
+# Build artifacts count against the account's Actions storage; the release files do not.
+# Runs after every build and once a day: deletes every artifact older than 6 hours, and all
+# of them when 'all' is ticked.
+on:
+  workflow_run:
+    workflows: ["Build Windows app", "Build Linux app"]
+    types: [completed]
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+    inputs:
+      all:
+        description: "Delete every artifact, not only old ones"
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const all = context.payload.inputs && String(context.payload.inputs.all) === "true";
+            const cutoff = Date.now() - 6 * 3600 * 1000;   // keep only the last few hours: releases hold the real files
+            let freed = 0, n = 0;
+            const it = github.paginate.iterator(github.rest.actions.listArtifactsForRepo,
+              { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 });
+            for await (const page of it) {
+              for (const a of page.data) {
+                if (a.expired) continue;
+                if (!all && Date.parse(a.created_at) > cutoff) continue;
+                await github.rest.actions.deleteArtifact({ owner: context.repo.owner, repo: context.repo.repo, artifact_id: a.id });
+                freed += a.size_in_bytes; n++;
+              }
+            }
+            core.info(`deleted ${n} artifacts, ${(freed / 2**30).toFixed(2)} GB`);

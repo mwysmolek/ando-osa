@@ -1,4 +1,6 @@
+# the engine and the headless commands (python -m ando_osa …)
 pyvisa>=1.11
-PyQt5>=5.15
+pyvisa-py>=0.7        # fallback VISA backend when NI-VISA / Keysight IO Libraries are missing
 numpy>=1.20
-matplotlib>=3.3
+matplotlib>=3.5
+pytest>=8.0

@@ -1,0 +1,4 @@
+# extra packages for building the desktop app (packaging/build_exe.py)
+pyinstaller>=6.10
+pillow>=10            # the app icon (build_exe.py)
+PySide6>=6.7,<6.12    # 6.12.0 (2026-10-08) crashes at process exit (tests and the packaged app)

@@ -6,6 +6,11 @@ dist/
 build/
 .venv/
 venv/
+.pytest_cache/
+.ruff_cache/
+
+# build output
+packaging/kayei.ico
 
 # Editors / tooling
 .idea/
@@ -18,3 +23,4 @@ ando107.py
 
 # Measurement output, if saved inside the repo
 timelapse_*/
+quicksave_*/

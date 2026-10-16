@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+    paths-ignore:
+      - "**.md"
+      - docs/**
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+      KAYEI_OSA_HOME: ${{ github.workspace }}/.kayei-test-home
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Qt runtime libraries
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q libegl1 libxkbcommon0 libxcb-cursor0 libgl1 libglib2.0-0 libdbus-1-3 \
+            libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 fonts-dejavu-core
+
+      - name: Install
+        run: python -m pip install -r requirements-desktop.txt ruff
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Every test file
+        run: python -m pytest -q tests/ --durations=10 -p no:cacheprovider
+
+      - name: The app comes up and sweeps (simulator)
+        run: python -m osa_qt.app --smoke --new-instance

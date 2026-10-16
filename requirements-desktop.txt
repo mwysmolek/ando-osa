@@ -1,0 +1,3 @@
+# the desktop app (python -m osa_qt.app)
+-r requirements.txt
+PySide6>=6.7,<6.12    # 6.12.0 (2026-10-08) crashes at process exit (tests and the packaged app)

@@ -4,19 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ando-osa"
-version = "0.1.0"
-description = "PyQt5 GUI for controlling Ando AQ63xx optical spectrum analyzers over GPIB/VISA"
+dynamic = ["version"]
+description = "kayEi SpectrumStudio: control, analysis and time-lapse for Ando AQ63xx optical spectrum analyzers over GPIB/VISA"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
     { name = "wysmolek", email = "wysmolek@gmail.com" },
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "pyvisa>=1.11",
-    "PyQt5>=5.15",
+    "pyvisa-py>=0.7",
     "numpy>=1.20",
-    "matplotlib>=3.3",
+    "matplotlib>=3.5",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,8 +26,30 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 
+[project.optional-dependencies]
+desktop = ["PySide6>=6.7,<6.12"]
+dev = ["pytest>=8.0", "ruff"]
+
+[project.scripts]
+ando-osa = "ando_osa.cli:main"
+
 [project.gui-scripts]
-ando-osa = "ando_osa.__main__:main"
+kayei-spectrumstudio = "osa_qt.app:main"
 
 [tool.setuptools]
-packages = ["ando_osa"]
+packages = ["ando_osa", "osa_qt", "osa_qt.pages"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ando_osa.__version__" }
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
+extend-exclude = ["build", "dist"]
+
+[tool.ruff.lint]
+select = ["E9", "F", "E", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
